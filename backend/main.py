@@ -1,36 +1,60 @@
-from fastapi import FastAPI, Request, Response, HTTPException, Depends
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from backend.core.database import Base, engine, SessionLocal
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from backend.core.database import Base, engine
 from backend.api import auth_router
-from backend.core.security import decode_session_token
-from backend.models.user import User
 from backend.api.tasks import router as tasks_router
+from backend.core.security import decode_session_token
+import os
 
-# Создаём таблицы
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Tempa API", version="1.0")
+app = FastAPI(
+    title="Tempa API",
+    version="1.0",
+    swagger_ui_parameters={"withCredentials": True}
+)
 
-# CORS (для локальной разработки)
+# CORS
+origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:5500",   # ← добавьте это
+    "http://127.0.0.1:5500",
+    "null",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Подключаем роутеры
 app.include_router(tasks_router)
 app.include_router(auth_router)
 
-# Middleware для проверки аутентификации (кроме /auth/* и /health)
+# Статика (фронтенд)
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/frontend", StaticFiles(directory=frontend_path, html=True), name="frontend")
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
+
+# Middleware авторизации
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-    if request.url.path.startswith("/auth") or request.url.path == "/health":
+    # Публичные пути
+    public_paths = [
+        "/auth", "/docs", "/openapi.json", "/frontend",
+        "/", "/script.js", "/style.css", "/favicon.ico", "/health"
+    ]
+    if any(request.url.path.startswith(p) or request.url.path == p for p in public_paths):
         return await call_next(request)
-    
+
     token = request.cookies.get("tempa_session")
     if not token:
         return Response("Not authenticated", status_code=401)
@@ -43,21 +67,3 @@ async def auth_middleware(request: Request, call_next):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-# Вспомогательная зависимость для получения текущего пользователя
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-

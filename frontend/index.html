@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempa – тепловизионный анализатор</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Страница логина -->
+<div id="loginPage" class="page active">
+    <div class="login-container">
+        <h1>🌡️ Tempa</h1>
+        <p>Войдите в систему</p>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Имя пользователя" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+            <span class="register-link">Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a></span>
+        </form>
+        <form id="registerForm" style="display:none;">
+            <input type="text" id="regUsername" placeholder="Имя пользователя" required>
+            <input type="password" id="regPassword" placeholder="Пароль" required>
+            <button type="submit">Зарегистрироваться</button>
+            <span class="register-link">Уже есть аккаунт? <a href="#" id="showLogin">Войти</a></span>
+        </form>
+        <div id="loginMessage" class="message"></div>
+    </div>
+</div>
+
+<!-- Основная страница -->
+<div id="mainPage" class="page">
+    <header>
+        <h1>🌡️ Tempa</h1>
+        <button id="logoutBtn">Выйти</button>
+    </header>
+    <main>
+        <section class="upload-area">
+            <input type="file" id="fileInput" accept=".ravi">
+            <label for="fileInput" class="file-label">
+                <span class="icon">📁</span>
+                <span>Выберите .ravi файл</span>
+            </label>
+            <span id="fileName" class="file-name"></span>
+        </section>
+
+        <section class="params">
+            <div class="param-group">
+                <label for="tMin">T min (°C)</label>
+                <input type="number" id="tMin" value="625.0" step="0.1">
+            </div>
+            <div class="param-group">
+                <label for="tMax">T max (°C)</label>
+                <input type="number" id="tMax" value="1526.1" step="0.1">
+            </div>
+            <div class="param-group">
+                <label for="threshold">Порог (°C)</label>
+                <input type="number" id="threshold" value="900.0" step="0.1">
+            </div>
+        </section>
+
+        <button id="processBtn">🚀 Запустить обработку</button>
+
+        <div id="status" class="status"></div>
+
+        <div id="result" class="result" style="display:none;">
+            <h2>Результат</h2>
+            <img id="resultImage" alt="Тепловая карта">
+            <div class="threshold-slider">
+                <label for="thresholdSlider">Порог: <span id="thresholdValue">900.0</span>°C</label>
+                <input type="range" id="thresholdSlider" min="625" max="1526" step="0.1" value="900.0">
+            </div>
+            <button id="downloadBtn" class="download-btn">⬇️ Сохранить PNG</button>
+        </div>
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

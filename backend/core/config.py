@@ -1,4 +1,4 @@
-import os
+import tempfile
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -8,11 +8,10 @@ class Settings(BaseSettings):
     SESSION_MAX_AGE: int = 86400
     REDIS_URL: str = "redis://localhost:6379/0"
     MAX_FILE_SIZE: int = 2 * 1024 * 1024 * 1024
-    TEMP_DIR: str = "/tmp/tempa"
+    TEMP_DIR: str = tempfile.gettempdir()
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-# ВАЖНО: создаём экземпляр настроек
 settings = Settings()

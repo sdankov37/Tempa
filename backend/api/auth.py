@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from sqlalchemy.orm import Session
-from ..core.database import SessionLocal
+from ..core.dependencies import get_db
 from ..core.security import hash_password, verify_password, create_session_token, decode_session_token
 from ..models.user import User
 from pydantic import BaseModel
@@ -14,13 +14,6 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/register")
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
@@ -45,8 +38,8 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
         value=token,
         httponly=True,
         max_age=86400,
-        secure=False,
-        samesite="lax"
+        secure=True,
+        samesite="none"
     )
     return {"message": "Login successful"}
 

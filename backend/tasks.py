@@ -1,5 +1,5 @@
 from .celery_app import celery_app
-from .services.processor import process_video, recolor_image
+from .services.processor import process_video
 from .services.task_manager import update_task_status
 import logging
 
@@ -8,8 +8,11 @@ logger = logging.getLogger(__name__)
 @celery_app.task(bind=True)
 def process_video_task(self, task_id: int, file_bytes: bytes, t_min: float, t_max: float, threshold: float):
     try:
+        logger.info(f"Starting processing for task {task_id}")
         update_task_status(task_id, "processing", celery_task_id=self.request.id)
+
         image_b64, max_map_b64, shape = process_video(file_bytes, t_min, t_max, threshold)
+
         update_task_status(
             task_id,
             "completed",
@@ -18,10 +21,10 @@ def process_video_task(self, task_id: int, file_bytes: bytes, t_min: float, t_ma
             shape=shape,
             celery_task_id=self.request.id
         )
+        logger.info(f"Task {task_id} completed successfully")
         return {"status": "completed", "task_id": task_id}
+
     except Exception as e:
         logger.error(f"Task {task_id} failed: {str(e)}")
         update_task_status(task_id, "failed", error_message=str(e), celery_task_id=self.request.id)
         raise
-
-##Z V

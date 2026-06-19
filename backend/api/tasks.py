@@ -1,21 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
-from ..services.task_manager import create_task, get_task, update_task_status
+from ..services.task_manager import create_task, get_task
 from ..services.processor import recolor_image
 from ..tasks import process_video_task
-from ..core.database import SessionLocal
-from ..core.security import get_current_user
+from ..core.dependencies import get_db, get_current_user
 from ..models.user import User
 import json
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/upload")
 async def upload_file(
@@ -28,7 +20,6 @@ async def upload_file(
 ):
     if not file.filename.endswith('.ravi'):
         raise HTTPException(status_code=400, detail="Файл должен иметь расширение .ravi")
-
     contents = await file.read()
     task = create_task(db, current_user.id, file.filename, t_min, t_max, threshold)
     process_video_task.delay(task.id, contents, t_min, t_max, threshold)
@@ -69,7 +60,6 @@ def recolor_task(
         raise HTTPException(status_code=400, detail="Task not completed or missing data")
     shape = json.loads(task.shape)
     new_image = recolor_image(task.max_map, tuple(shape), task.t_min, task.t_max, threshold)
-    # Обновляем порог и картинку в БД
     task.threshold = threshold
     task.result_image = new_image
     db.commit()

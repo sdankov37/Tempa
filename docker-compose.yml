@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./tempa.db
+      - SECRET_KEY=change-this-secret-key-in-production
+    volumes:
+      - ./backend:/app
+      - tempa_data:/tmp/tempa
+    restart: unless-stopped
+
+volumes:
+  tempa_data:

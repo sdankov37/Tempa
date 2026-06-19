@@ -21,3 +21,29 @@ def decode_session_token(token: str) -> dict:
         return serializer.loads(token, max_age=settings.SESSION_MAX_AGE)
     except Exception:
         return None
+    
+
+# Добавьте в конец файла backend/core/security.py
+from fastapi import Request, HTTPException, Depends
+from sqlalchemy.orm import Session
+from ..core.database import SessionLocal
+from ..models.user import User
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("tempa_session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    payload = decode_session_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    user = db.query(User).filter(User.id == payload["user_id"]).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
