@@ -10,7 +10,14 @@ def get_db():
     finally:
         db.close()
 
-def create_task(db: Session, user_id: int, filename: str, t_min: float, t_max: float, threshold: float) -> Task:
+def create_task(db, user_id: int, filename: str, t_min: float, t_max: float, threshold: float):
+    # Если сессия не передана, создаём свою
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+    else:
+        close_db = False
+
     task = Task(
         user_id=user_id,
         filename=filename,
@@ -22,6 +29,8 @@ def create_task(db: Session, user_id: int, filename: str, t_min: float, t_max: f
     db.add(task)
     db.commit()
     db.refresh(task)
+    if close_db:
+        db.close()
     return task
 
 def update_task_status(
@@ -33,23 +42,35 @@ def update_task_status(
     shape: tuple = None,
     error_message: str = None
 ):
-    db = next(get_db())
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        return
-    task.status = status
-    if celery_task_id:
-        task.celery_task_id = celery_task_id
-    if result_image:
-        task.result_image = result_image
-    if max_map:
-        task.max_map = max_map
-    if shape:
-        task.shape = json.dumps(shape)
-    if error_message:
-        task.error_message = error_message
-    db.commit()
-    db.refresh(task)
+    db = SessionLocal()
+    try:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        if not task:
+            return
+        task.status = status
+        if celery_task_id:
+            task.celery_task_id = celery_task_id
+        if result_image:
+            task.result_image = result_image
+        if max_map:
+            task.max_map = max_map
+        if shape:
+            task.shape = json.dumps(shape)
+        if error_message:
+            task.error_message = error_message
+        db.commit()
+        db.refresh(task)
+    finally:
+        db.close()
 
-def get_task(db: Session, task_id: int, user_id: int) -> Task:
-    return db.query(Task).filter(Task.id == task_id, Task.user_id == user_id).first()
+def get_task(db, task_id: int, user_id: int):
+    # Если сессия не передана, создаём свою
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+    else:
+        close_db = False
+    task = db.query(Task).filter(Task.id == task_id, Task.user_id == user_id).first()
+    if close_db:
+        db.close()
+    return task

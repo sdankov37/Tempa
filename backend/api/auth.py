@@ -38,8 +38,9 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
         value=token,
         httponly=True,
         max_age=86400,
-        secure=True,
-        samesite="none"
+        secure=False,          # <-- исправлено: для локальной разработки
+        samesite="lax",        # <-- подходит для одного origin
+        path="/",
     )
     return {"message": "Login successful"}
 
