@@ -5,6 +5,7 @@ from backend.core.database import Base, engine, SessionLocal
 from backend.api import auth_router
 from backend.core.security import decode_session_token
 from backend.models.user import User
+from backend.api.tasks import router as tasks_router
 
 # Создаём таблицы
 Base.metadata.create_all(bind=engine)
@@ -21,6 +22,7 @@ app.add_middleware(
 )
 
 # Подключаем роутеры
+app.include_router(tasks_router)
 app.include_router(auth_router)
 
 # Middleware для проверки аутентификации (кроме /auth/* и /health)
@@ -58,3 +60,4 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+

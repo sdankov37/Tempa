@@ -13,8 +13,9 @@ class Task(Base):
     threshold = Column(Float, nullable=False)
     status = Column(String, default="pending")  # pending, processing, completed, failed
     celery_task_id = Column(String, nullable=True)
-    result_image = Column(Text, nullable=True)   # base64
-    max_map = Column(Text, nullable=True)        # base64 compressed
+    result_image = Column(Text, nullable=True)
+    max_map = Column(Text, nullable=True)
+    shape = Column(String, nullable=True)  # JSON-строка [height, width]
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
